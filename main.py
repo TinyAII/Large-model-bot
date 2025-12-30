@@ -1,11 +1,10 @@
-import random
-import asyncio
 import os
 import json
 import datetime
+import asyncio
 import aiohttp
 import logging
-from astrbot.api.all import AstrMessageEvent, CommandResult, Context, Image, Video, Plain, MessageChain
+from astrbot.api.all import AstrMessageEvent, CommandResult, Context
 import astrbot.api.event.filter as filter
 from astrbot.api.star import register, Star
 
@@ -17,13 +16,11 @@ class Main(Star):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.PLUGIN_NAME = "astrbot_plugin_essential"
-        PLUGIN_NAME = self.PLUGIN_NAME
-        path = os.path.abspath(os.path.dirname(__file__))
 
-        if not os.path.exists(f"data/{PLUGIN_NAME}_data.json"):
-            with open(f"data/{PLUGIN_NAME}_data.json", "w", encoding="utf-8") as f:
+        if not os.path.exists(f"data/{self.PLUGIN_NAME}_data.json"):
+            with open(f"data/{self.PLUGIN_NAME}_data.json", "w", encoding="utf-8") as f:
                 f.write(json.dumps({}, ensure_ascii=False, indent=2))
-        with open(f"data/{PLUGIN_NAME}_data.json", "r", encoding="utf-8") as f:
+        with open(f"data/{self.PLUGIN_NAME}_data.json", "r", encoding="utf-8") as f:
             self.data = json.loads(f.read())
         self.good_morning_data = self.data.get("good_morning", {})
         self.good_morning_cd = {}
@@ -81,7 +78,6 @@ class Main(Star):
         self.update_good_morning_cd(user_id, curr_utc8)
 
         curr_day: int = curr_utc8.day
-        curr_date_str = curr_utc8.strftime("%Y-%m-%d")
 
         curr_day_sleeping = 0
         for v in umo.values():
@@ -121,3 +117,48 @@ class Main(Star):
                 )
                 .use_t2i(False)
             )
+
+    @filter.command("王者战力")
+    async def king_glory_power_query(self, message: AstrMessageEvent):
+        hero_name = message.message_str.replace("王者战力", "").strip()
+        
+        if not hero_name:
+            return CommandResult().message("正确查询示例：王者战力 孙悟空")
+        
+        api_url = "https://www.sapi.run/hero/select.php"
+        params = {
+            "hero": hero_name,
+            "type": "aqq"
+        }
+        
+        try:
+            timeout = aiohttp.ClientTimeout(total=10)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error("查询失败，请稍后重试")
+                    
+                    data = await resp.json()
+                    
+                    if data.get("code") == 200 and "data" in data:
+                        hero_data = data["data"]
+                        
+                        output = f"{hero_data.get('name', '')}\n"
+                        output += f"国服最低：{hero_data.get('guobiao', '')}\n"
+                        output += f"省标最低：{hero_data.get('provincePower', '')}\n"
+                        output += f"市标最低：{hero_data.get('cityPower', '')}\n"
+                        output += f"区标最低：{hero_data.get('areaPower', '')}"
+                        
+                        return CommandResult().message(output)
+                    else:
+                        return CommandResult().error(f"查询失败：{data.get('msg', '未知错误')}")
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到查询服务器，请稍后重试")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("查询超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"查询王者战力时发生错误：{e}")
+            return CommandResult().error(f"查询失败：{str(e)}")
