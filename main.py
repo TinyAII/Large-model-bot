@@ -12,7 +12,7 @@ from astrbot.api.star import register, Star
 logger = logging.getLogger("astrbot")
 
 
-@register("D-G-N-C-J", "Tinyxi", "早晚安记录+王者战力查询+腾讯元宝+DeepSeek-3.2+DeepSeek-3.1", "1.0.0", "")
+@register("D-G-N-C-J", "Tinyxi", "早晚安记录+王者战力查询+腾讯元宝+DeepSeek-3.2+DeepSeek-3.1+GPT5-nano+Claude4.5-hiku+Qwen3-coder+DeepSeek-R1+智谱GLM4.6", "1.0.0", "")
 class Main(Star):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -301,6 +301,268 @@ class Main(Star):
         except Exception as e:
             logger.error(f"请求DeepSeek-3.1助手时发生错误：{e}")
             return CommandResult().error(f"请求DeepSeek-3.1助手时发生错误：{str(e)}")
+
+    @filter.command("gpt5")
+    async def gpt5_nano(self, message: AstrMessageEvent):
+        """GPT5-nano助手，支持记忆功能"""
+        msg = message.message_str.replace("gpt5", "").strip()
+        
+        if not msg:
+            return CommandResult().error("正确指令：gpt5 《问题》 记忆 《记忆密钥6位数》\n\n示例：gpt5 1+1 记忆 123456")
+        
+        # 解析用户输入，检查是否包含"记忆"关键字
+        if "记忆" not in msg:
+            return CommandResult().error("你没有填写记忆哦，这样是大众池哦，你的记忆会被篡改，你需要填写记忆\n\n正确格式：gpt5 《问题》 记忆 《记忆密钥6位数》\n\n示例：gpt5 1+1 记忆 123456")
+        
+        # 分割输入，提取问题和uid
+        parts = msg.split("记忆")
+        if len(parts) != 2:
+            return CommandResult().error("正确格式：gpt5 《问题》 记忆 《记忆密钥6位数》\n\n示例：gpt5 1+1 记忆 123456")
+        
+        question = parts[0].strip()
+        uid = parts[1].strip()
+        
+        # 验证uid是否为6位数字
+        if not uid.isdigit() or len(uid) != 6:
+            return CommandResult().error("记忆密钥必须是6位数字\n\n正确格式：gpt5 《问题》 记忆 《记忆密钥6位数》\n\n示例：gpt5 1+1 记忆 123456")
+        
+        api_url = "https://api.jkyai.top/API/gpt5-nano/index.php"
+        params = {
+            "question": question,
+            "uid": uid
+        }
+        
+        try:
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error(f"请求GPT5-nano助手失败，服务器返回错误状态码：{resp.status}")
+                    
+                    result = await resp.text()
+                    
+                    return CommandResult().message(result)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到GPT5-nano助手服务器，请稍后重试或检查网络连接")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("请求超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"请求GPT5-nano助手时发生错误：{e}")
+            return CommandResult().error(f"请求GPT5-nano助手时发生错误：{str(e)}")
+
+    @filter.command("克劳德")
+    async def claude_hiku(self, message: AstrMessageEvent):
+        """Claude4.5-hiku助手，支持记忆功能"""
+        msg = message.message_str.replace("克劳德", "").strip()
+        
+        if not msg:
+            return CommandResult().error("正确指令：克劳德 《问题》 记忆 《记忆密钥6位数》\n\n示例：克劳德 1+1 记忆 123456")
+        
+        # 解析用户输入，检查是否包含"记忆"关键字
+        if "记忆" not in msg:
+            return CommandResult().error("你没有填写记忆哦，这样是大众池哦，你的记忆会被篡改，你需要填写记忆\n\n正确格式：克劳德 《问题》 记忆 《记忆密钥6位数》\n\n示例：克劳德 1+1 记忆 123456")
+        
+        # 分割输入，提取问题和uid
+        parts = msg.split("记忆")
+        if len(parts) != 2:
+            return CommandResult().error("正确格式：克劳德 《问题》 记忆 《记忆密钥6位数》\n\n示例：克劳德 1+1 记忆 123456")
+        
+        question = parts[0].strip()
+        uid = parts[1].strip()
+        
+        # 验证uid是否为6位数字
+        if not uid.isdigit() or len(uid) != 6:
+            return CommandResult().error("记忆密钥必须是6位数字\n\n正确格式：克劳德 《问题》 记忆 《记忆密钥6位数》\n\n示例：克劳德 1+1 记忆 123456")
+        
+        api_url = "https://api.jkyai.top/API/hiku-4.5/index.php"
+        params = {
+            "question": question,
+            "uid": uid
+        }
+        
+        try:
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error(f"请求Claude4.5-hiku助手失败，服务器返回错误状态码：{resp.status}")
+                    
+                    result = await resp.text()
+                    
+                    return CommandResult().message(result)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到Claude4.5-hiku助手服务器，请稍后重试或检查网络连接")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("请求超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"请求Claude4.5-hiku助手时发生错误：{e}")
+            return CommandResult().error(f"请求Claude4.5-hiku助手时发生错误：{str(e)}")
+
+    @filter.command("通义千问")
+    async def qwen3_coder(self, message: AstrMessageEvent):
+        """通义千问助手，支持记忆功能"""
+        msg = message.message_str.replace("通义千问", "").strip()
+        
+        if not msg:
+            return CommandResult().error("正确指令：通义千问 《问题》 记忆 《记忆密钥6位数》\n\n示例：通义千问 1+1 记忆 111111")
+        
+        # 解析用户输入，检查是否包含"记忆"关键字
+        if "记忆" not in msg:
+            return CommandResult().error("你没有填写记忆哦，这样是大众池哦，你的记忆会被篡改，你需要填写记忆\n\n正确格式：通义千问 《问题》 记忆 《记忆密钥6位数》\n\n示例：通义千问 1+1 记忆 111111")
+        
+        # 分割输入，提取问题和uid
+        parts = msg.split("记忆")
+        if len(parts) != 2:
+            return CommandResult().error("正确格式：通义千问 《问题》 记忆 《记忆密钥6位数》\n\n示例：通义千问 1+1 记忆 111111")
+        
+        question = parts[0].strip()
+        uid = parts[1].strip()
+        
+        # 验证uid是否为6位数字
+        if not uid.isdigit() or len(uid) != 6:
+            return CommandResult().error("记忆密钥必须是6位数字\n\n正确格式：通义千问 《问题》 记忆 《记忆密钥6位数》\n\n示例：通义千问 1+1 记忆 111111")
+        
+        api_url = "https://api.jkyai.top/API/qwen3-coder/index.php"
+        params = {
+            "question": question,
+            "uid": uid
+        }
+        
+        try:
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error(f"请求通义千问助手失败，服务器返回错误状态码：{resp.status}")
+                    
+                    result = await resp.text()
+                    
+                    return CommandResult().message(result)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到通义千问助手服务器，请稍后重试或检查网络连接")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("请求超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"请求通义千问助手时发生错误：{e}")
+            return CommandResult().error(f"请求通义千问助手时发生错误：{str(e)}")
+
+    @filter.command("deepR1")
+    async def deepseek_r1(self, message: AstrMessageEvent):
+        """DeepSeek-R1助手，支持异步请求"""
+        msg = message.message_str.replace("deepR1", "").strip()
+        
+        if not msg:
+            return CommandResult().error("正确指令：deepR1 <提问内容>\n\n示例：deepR1 1+1")
+        
+        question = msg.strip()
+        
+        api_url = "https://api.jkyai.top/API/deepseek.php"
+        params = {
+            "question": question
+        }
+        
+        try:
+            # 根据文档，该API响应速度较慢，设置较长超时时间
+            timeout = aiohttp.ClientTimeout(total=120)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error(f"请求DeepSeek-R1助手失败，服务器返回错误状态码：{resp.status}")
+                    
+                    result = await resp.text()
+                    
+                    return CommandResult().message(result)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到DeepSeek-R1助手服务器，请稍后重试或检查网络连接")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("请求超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"请求DeepSeek-R1助手时发生错误：{e}")
+            return CommandResult().error(f"请求DeepSeek-R1助手时发生错误：{str(e)}")
+
+    @filter.command("智谱")
+    async def glm46(self, message: AstrMessageEvent):
+        """智谱GLM4.6助手，支持异步请求"""
+        msg = message.message_str.replace("智谱", "").strip()
+        
+        if not msg:
+            return CommandResult().error("正确指令：智谱 <提问内容>\n\n示例：智谱 1+1")
+        
+        question = msg.strip()
+        
+        api_url = "https://api.jkyai.top/API/glm4.6.php"
+        params = {
+            "question": question
+        }
+        
+        try:
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error(f"请求智谱GLM4.6助手失败，服务器返回错误状态码：{resp.status}")
+                    
+                    result = await resp.text()
+                    
+                    return CommandResult().message(result)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到智谱GLM4.6助手服务器，请稍后重试或检查网络连接")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("请求超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"请求智谱GLM4.6助手时发生错误：{e}")
+            return CommandResult().error(f"请求智谱GLM4.6助手时发生错误：{str(e)}")
+    
+    @filter.command("夸克")
+    async def kuaike_ai(self, message: AstrMessageEvent):
+        """夸克AI助手，支持异步请求"""
+        msg = message.message_str.replace("夸克", "").strip()
+        
+        if not msg:
+            return CommandResult().error("正确指令：夸克 <提问内容>\n\n示例：夸克 1+1")
+        
+        content = msg.strip()
+        
+        api_url = "https://api.jkyai.top/API/kkaimx.php"
+        params = {
+            "content": content
+        }
+        
+        try:
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error(f"请求夸克AI助手失败，服务器返回错误状态码：{resp.status}")
+                    
+                    result = await resp.text()
+                    
+                    return CommandResult().message(result)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到夸克AI助手服务器，请稍后重试或检查网络连接")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("请求超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"请求夸克AI助手时发生错误：{e}")
+            return CommandResult().error(f"请求夸克AI助手时发生错误：{str(e)}")
 
     async def terminate(self):
         """插件卸载/重载时调用"""
