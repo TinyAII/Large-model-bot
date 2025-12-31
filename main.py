@@ -515,6 +515,253 @@ class Main(Star):
         except Exception as e:
             logger.error(f"请求夸克AI助手时发生错误：{e}")
             return CommandResult().error(f"请求夸克AI助手时发生错误：{str(e)}")
+    
+    @filter.command("蚂蚁")
+    async def ant_ling_ai(self, message: AstrMessageEvent):
+        """蚂蚁Ling2.0-1tAI助手，支持异步请求"""
+        msg = message.message_str.replace("蚂蚁", "").strip()
+        
+        if not msg:
+            return CommandResult().error("正确指令：蚂蚁 <提问内容>\n\n示例：蚂蚁 1+1")
+        
+        question = msg.strip()
+        
+        api_url = "https://api.jkyai.top/API/ling-1t.php"
+        params = {
+            "question": question
+        }
+        
+        try:
+            timeout = aiohttp.ClientTimeout(total=120)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error(f"请求蚂蚁AI助手失败，服务器返回错误状态码：{resp.status}")
+                    
+                    result = await resp.text()
+                    
+                    return CommandResult().message(result)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到蚂蚁AI助手服务器，请稍后重试或检查网络连接")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("请求超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"请求蚂蚁AI助手时发生错误：{e}")
+            return CommandResult().error(f"请求蚂蚁AI助手时发生错误：{str(e)}")
+    
+    @filter.command("豆包")
+    async def doubao_ai(self, message: AstrMessageEvent):
+        """字节跳动豆包AI助手，支持异步请求"""
+        msg = message.message_str.replace("豆包", "").strip()
+        
+        if not msg:
+            return CommandResult().error("正确指令：豆包 <提问内容>\n\n示例：豆包 1+1")
+        
+        question = msg.strip()
+        
+        api_url = "https://api.jkyai.top/API/doubao.php"
+        params = {
+            "question": question
+        }
+        
+        try:
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error(f"请求豆包AI助手失败，服务器返回错误状态码：{resp.status}")
+                    
+                    result = await resp.text()
+                    
+                    return CommandResult().message(result)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到豆包AI助手服务器，请稍后重试或检查网络连接")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("请求超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"请求豆包AI助手时发生错误：{e}")
+            return CommandResult().error(f"请求豆包AI助手时发生错误：{str(e)}")
+    
+    @filter.command("gpt")
+    async def chatgpt_oss(self, message: AstrMessageEvent):
+        """ChatGPT-ossAI助手，支持记忆功能"""
+        msg = message.message_str.replace("gpt", "").strip()
+        
+        if not msg:
+            return CommandResult().error("正确指令：gpt 《问题》 记忆 《记忆密钥6位数》\n\n示例：gpt 1+1 记忆 123456")
+        
+        # 解析用户输入，检查是否包含"记忆"关键字
+        if "记忆" not in msg:
+            return CommandResult().error("你没有填写记忆哦，这样是大众池哦，你的记忆会被篡改，你需要填写记忆\n\n正确格式：gpt 《问题》 记忆 《记忆密钥6位数》\n\n示例：gpt 1+1 记忆 123456")
+        
+        # 分割输入，提取问题和uid
+        parts = msg.split("记忆")
+        if len(parts) != 2:
+            return CommandResult().error("正确格式：gpt 《问题》 记忆 《记忆密钥6位数》\n\n示例：gpt 1+1 记忆 123456")
+        
+        question = parts[0].strip()
+        uid = parts[1].strip()
+        
+        # 验证uid是否为6位数字
+        if not uid.isdigit() or len(uid) != 6:
+            return CommandResult().error("记忆密钥必须是6位数字\n\n正确格式：gpt 《问题》 记忆 《记忆密钥6位数》\n\n示例：gpt 1+1 记忆 123456")
+        
+        api_url = "https://api.jkyai.top/API/chatgpt-oss/index.php"
+        params = {
+            "question": question,
+            "uid": uid
+        }
+        
+        try:
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error(f"请求ChatGPT-ossAI助手失败，服务器返回错误状态码：{resp.status}")
+                    
+                    result = await resp.text()
+                    
+                    return CommandResult().message(result)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到ChatGPT-ossAI助手服务器，请稍后重试或检查网络连接")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("请求超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"请求ChatGPT-ossAI助手时发生错误：{e}")
+            return CommandResult().error(f"请求ChatGPT-ossAI助手时发生错误：{str(e)}")
+    
+    @filter.command("谷歌")
+    async def gemini_ai(self, message: AstrMessageEvent):
+        """Gemini-2.5AI助手，支持记忆功能"""
+        msg = message.message_str.replace("谷歌", "").strip()
+        
+        if not msg:
+            return CommandResult().error("正确指令：谷歌 《问题》 记忆 《记忆密钥6位数》\n\n示例：谷歌 1+1 记忆 123456")
+        
+        # 解析用户输入，检查是否包含"记忆"关键字
+        if "记忆" not in msg:
+            return CommandResult().error("你没有填写记忆哦，这样是大众池哦，你的记忆会被篡改，你需要填写记忆\n\n正确格式：谷歌 《问题》 记忆 《记忆密钥6位数》\n\n示例：谷歌 1+1 记忆 123456")
+        
+        # 分割输入，提取问题和uid
+        parts = msg.split("记忆")
+        if len(parts) != 2:
+            return CommandResult().error("正确格式：谷歌 《问题》 记忆 《记忆密钥6位数》\n\n示例：谷歌 1+1 记忆 123456")
+        
+        question = parts[0].strip()
+        uid = parts[1].strip()
+        
+        # 验证uid是否为6位数字
+        if not uid.isdigit() or len(uid) != 6:
+            return CommandResult().error("记忆密钥必须是6位数字\n\n正确格式：谷歌 《问题》 记忆 《记忆密钥6位数》\n\n示例：谷歌 1+1 记忆 123456")
+        
+        api_url = "https://api.jkyai.top/API/gemini2.5/index.php"
+        params = {
+            "question": question,
+            "uid": uid
+        }
+        
+        try:
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error(f"请求谷歌Gemini-2.5AI助手失败，服务器返回错误状态码：{resp.status}")
+                    
+                    result = await resp.text()
+                    
+                    return CommandResult().message(result)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到谷歌Gemini-2.5AI助手服务器，请稍后重试或检查网络连接")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("请求超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"请求谷歌Gemini-2.5AI助手时发生错误：{e}")
+            return CommandResult().error(f"请求谷歌Gemini-2.5AI助手时发生错误：{str(e)}")
+    
+    @filter.command("阿里")
+    async def qwen3_ai(self, message: AstrMessageEvent):
+        """阿里云千问Qwen3-235bAI助手，支持异步请求"""
+        msg = message.message_str.replace("阿里", "").strip()
+        
+        if not msg:
+            return CommandResult().error("正确指令：阿里 <提问内容>\n\n示例：阿里 1+1")
+        
+        question = msg.strip()
+        
+        api_url = "https://api.jkyai.top/API/qwen3.php"
+        params = {
+            "question": question
+        }
+        
+        try:
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error(f"请求阿里AI助手失败，服务器返回错误状态码：{resp.status}")
+                    
+                    result = await resp.text()
+                    
+                    return CommandResult().message(result)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到阿里AI助手服务器，请稍后重试或检查网络连接")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("请求超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"请求阿里AI助手时发生错误：{e}")
+            return CommandResult().error(f"请求阿里AI助手时发生错误：{str(e)}")
+    
+    @filter.command("讯飞")
+    async def xfxhx1_ai(self, message: AstrMessageEvent):
+        """讯飞星火X1AI助手，支持异步请求"""
+        msg = message.message_str.replace("讯飞", "").strip()
+        
+        if not msg:
+            return CommandResult().error("正确指令：讯飞 <提问内容>\n\n示例：讯飞 1+1")
+        
+        content = msg.strip()
+        
+        api_url = "https://api.jkyai.top/API/xfxhx1.php"
+        params = {
+            "content": content
+        }
+        
+        try:
+            # API文档显示响应耗时较长（6.70s），设置较长超时时间
+            timeout = aiohttp.ClientTimeout(total=120)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        return CommandResult().error(f"请求讯飞AI助手失败，服务器返回错误状态码：{resp.status}")
+                    
+                    result = await resp.text()
+                    
+                    return CommandResult().message(result)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"网络连接错误：{e}")
+            return CommandResult().error("无法连接到讯飞AI助手服务器，请稍后重试或检查网络连接")
+        except asyncio.TimeoutError:
+            logger.error("请求超时")
+            return CommandResult().error("请求超时，请稍后重试")
+        except Exception as e:
+            logger.error(f"请求讯飞AI助手时发生错误：{e}")
+            return CommandResult().error(f"请求讯飞AI助手时发生错误：{str(e)}")
 
     async def terminate(self):
         """插件卸载/重载时调用"""
