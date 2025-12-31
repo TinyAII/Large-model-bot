@@ -1,6 +1,6 @@
 # AstrBot Essential
 
-为 [AstrBot](https://github.com/Soulter/AstrBot) 支持基本的娱乐功能。
+为 AstrBot 支持基本的娱乐功能。
 
 支持功能：
 - 早安/晚安记录
@@ -16,7 +16,7 @@
 
 安装方法：
 ```
-plugin i https://github.com/520TinyXI/d-g-n-c-j.git
+plugin i d-g-n-c-j
 ```
 
 使用方法：
@@ -71,54 +71,45 @@ plugin i https://github.com/520TinyXI/d-g-n-c-j.git
   - 晚安时会显示你是群里今天第几个睡觉的
   - 数据持久化保存，重启不丢失
 - **腾讯元宝助手**：调用腾讯元宝大模型进行智能问答
-  - 使用第三方API：https://api.jkyai.top/API/yuanbao.php
   - 支持数学计算、知识问答、闲聊等功能
   - 支持异步请求，不会阻塞其他请求
 - **DeepSeek-3.2助手**：调用DeepSeek-3.2大模型进行智能问答
-  - 使用第三方API：https://api.jkyai.top/API/depsek3.2.php
   - 支持数学计算、知识问答、编程帮助等功能
   - 支持异步请求，不会阻塞其他请求
   - 拥有128K上下文长度，支持处理文件（需平台开启）
 - **DeepSeek-3.1助手**：调用DeepSeek-3.1大模型进行智能问答
-  - 使用第三方API：https://api.jkyai.top/API/depsek3.1.php
   - 支持数学计算、知识问答、编程帮助等功能
   - 支持异步请求，不会阻塞其他请求
   - 深度求索Terminus最新版本，响应速度快
 - **GPT5-nano助手**：调用GPT5-nano大模型进行智能问答
-  - 使用第三方API：https://api.jkyai.top/API/gpt5-nano/index.php
   - 支持数学计算、知识问答、编程帮助等功能
   - 支持记忆功能，需要6位数字密钥
   - 支持异步请求，不会阻塞其他请求
   - 每天零点清理云端存储的记忆数据
   - 记忆密钥必须是6位数字，创建速率限制为每60秒1个
 - **Claude4.5-hiku助手**：调用Claude4.5-hiku大模型进行智能问答
-  - 使用第三方API：https://api.jkyai.top/API/hiku-4.5/index.php
   - 支持数学计算、知识问答、编程帮助等功能
   - 支持记忆功能，需要6位数字密钥
   - 支持异步请求，不会阻塞其他请求
   - 每天零点清理云端存储的记忆数据
   - 记忆密钥必须是6位数字，创建速率限制为每60秒1个
 - **通义千问助手**：调用通义千问大模型进行智能问答
-  - 使用第三方API：https://api.jkyai.top/API/qwen3-coder/index.php
   - 支持数学计算、知识问答、编程帮助等功能
   - 支持记忆功能，需要6位数字密钥
   - 支持异步请求，不会阻塞其他请求
   - 每天零点清理云端存储的记忆数据
   - 记忆密钥必须是6位数字，创建速率限制为每60秒1个
 - **DeepSeek-R1助手**：调用DeepSeek-R1大模型进行智能问答
-  - 使用第三方API：https://api.jkyai.top/API/deepseek.php
   - 支持数学计算、知识问答、编程帮助等功能
   - 支持异步请求，不会阻塞其他请求
   - 超长上下文处理能力（支持最长128K tokens）
   - 响应速度较慢，设置了120秒超时时间
 - **智谱GLM4.6助手**：调用智谱GLM4.6大模型进行智能问答
-  - 使用第三方API：https://api.jkyai.top/API/glm4.6.php
   - 支持数学计算、知识问答、编程帮助等功能
   - 支持异步请求，不会阻塞其他请求
   - 智谱清言最强大的推理模型
   - 支持流式输出和自定义系统提示词（高级功能）
 - **夸克AI助手**：调用夸克AI大模型进行智能问答
-  - 使用第三方API：https://api.jkyai.top/API/kkaimx.php
   - 支持数学计算、知识问答、编程帮助等功能
   - 支持异步请求，不会阻塞其他请求
   - 智能科普文本模型，对标百度百科
