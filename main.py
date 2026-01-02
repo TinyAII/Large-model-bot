@@ -659,8 +659,8 @@ class Main(Star):
             return CommandResult().error(f"请求小米MiMo-V2助手时发生错误：{str(e)}")
     
     @filter.command("联网模型")
-    async def internet_model(self, message: AstrMessageEvent):
-        """联网模型，结合搜索引擎和DeepSeek-3.2API进行回答"""
+    async def lian_wang_mo_xing(self, message: AstrMessageEvent):
+        """联网模型，结合搜索引擎和AI进行问答"""
         msg = message.message_str.replace("联网模型", "").strip()
         
         if not msg:
@@ -669,61 +669,54 @@ class Main(Star):
         question = msg.strip()
         
         try:
-            # 1. 使用搜索引擎搜索相关信息
+            # 1. 调用搜索引擎API获取相关信息
             search_url = "https://uapis.cn/api/v1/search/aggregate"
             search_params = {
                 "query": question,
                 "timeout_ms": 30000
             }
             
-            search_timeout = aiohttp.ClientTimeout(total=30)
-            async with aiohttp.ClientSession(timeout=search_timeout) as session:
-                async with session.post(search_url, json=search_params) as resp:
-                    if resp.status != 200:
-                        return CommandResult().error(f"搜索失败，服务器返回错误状态码：{resp.status}")
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                # 发送搜索引擎请求
+                async with session.post(search_url, json=search_params) as search_resp:
+                    if search_resp.status != 200:
+                        return CommandResult().error(f"搜索引擎请求失败，服务器返回错误状态码：{search_resp.status}")
                     
-                    search_result = await resp.json()
-            
-            # 2. 处理搜索结果，提取标题、片段和发布日期
-            search_info = []
-            for result in search_result.get("results", [])[:5]:  # 只取前5条结果
-                title = result.get("title", "")
-                snippet = result.get("snippet", "")
-                publish_time = result.get("publish_time", "")
-                
-                if title and snippet:
-                    # 转换发布日期格式，只保留年月日
-                    if publish_time:
-                        publish_date = publish_time.split("T")[0] if "T" in publish_time else publish_time
-                    else:
-                        publish_date = ""
+                    search_result = await search_resp.json()
                     
-                    search_info.append(f"标题：{title}\n片段：{snippet}\n发布日期：{publish_date}\n")
-            
-            if not search_info:
-                return CommandResult().error("搜索未获取到相关信息")
-            
-            # 3. 构建给AI的提示词
-            ai_prompt = f"用户的问题是：{question}\n\n请结合以下搜索信息回答用户问题：\n{'\n'.join(search_info)}\n\n要求：\n1. 结合搜索到的信息回答用户问题\n2. 这是在QQ平台回答，请注意避免使用违禁词\n3. 回答要简洁明了，直接针对用户问题"
-            
-            # 4. 调用DeepSeek-3.2API获取回答
-            ai_url = "https://api.jkyai.top/API/depsek3.2.php"
-            ai_params = {
-                "question": ai_prompt,
-                "system": "你是一个智能助手，请结合提供的搜索信息回答用户问题，注意QQ平台的违禁词"
-            }
-            
-            ai_timeout = aiohttp.ClientTimeout(total=60)
-            async with aiohttp.ClientSession(timeout=ai_timeout) as session:
-                async with session.get(ai_url, params=ai_params) as resp:
-                    if resp.status != 200:
-                        return CommandResult().error(f"请求AI失败，服务器返回错误状态码：{resp.status}")
+                    # 2. 整理搜索结果，提取标题、片段和发布日期
+                    search_info = []
+                    for item in search_result.get("results", [])[:5]:  # 取前5条结果
+                        title = item.get("title", "")
+                        snippet = item.get("snippet", "")
+                        publish_time = item.get("publish_time", "")
+                        if title and snippet:
+                            # 简化发布日期格式
+                            if publish_time:
+                                # 将ISO格式转换为YYYY-MM-DD格式
+                                simple_time = publish_time.split("T")[0]
+                            else:
+                                simple_time = ""
+                            search_info.append(f"标题：{title}\n片段：{snippet}\n发布日期：{simple_time}\n")
                     
-                    ai_result = await resp.text()
-            
-            # 5. 返回AI的回答
-            return CommandResult().message(ai_result)
-            
+                    # 3. 构建给DeepSeek-3.2的问题
+                    combined_question = f"用户的问题是：{question}\n\n请结合以下搜索信息回答用户问题：\n{''.join(search_info)}\n\n注意：这是回答QQ平台的问题，请注意违禁词，回答要简洁明了，直接给出答案，不需要过多解释。"
+                    
+                    # 4. 调用DeepSeek-3.2API
+                    deepseek_url = "https://api.jkyai.top/API/depsek3.2.php"
+                    deepseek_params = {
+                        "question": combined_question
+                    }
+                    
+                    async with session.get(deepseek_url, params=deepseek_params) as deepseek_resp:
+                        if deepseek_resp.status != 200:
+                            return CommandResult().error(f"DeepSeek-3.2请求失败，服务器返回错误状态码：{deepseek_resp.status}")
+                        
+                        ai_result = await deepseek_resp.text()
+                        
+                        return CommandResult().message(ai_result)
+                        
         except aiohttp.ClientError as e:
             logger.error(f"网络连接错误：{e}")
             return CommandResult().error("网络连接错误，请稍后重试")
@@ -731,8 +724,8 @@ class Main(Star):
             logger.error("请求超时")
             return CommandResult().error("请求超时，请稍后重试")
         except Exception as e:
-            logger.error(f"请求联网模型时发生错误：{e}")
-            return CommandResult().error(f"请求联网模型时发生错误：{str(e)}")
+            logger.error(f"联网模型请求时发生错误：{e}")
+            return CommandResult().error(f"请求时发生错误：{str(e)}")
 
     async def terminate(self):
         """插件卸载/重载时调用"""
