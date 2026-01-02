@@ -658,13 +658,13 @@ class Main(Star):
             logger.error(f"请求小米MiMo-V2助手时发生错误：{e}")
             return CommandResult().error(f"请求小米MiMo-V2助手时发生错误：{str(e)}")
     
-    @filter.command("联网模型")
+    @filter.command("/联网模式")
     async def lian_wang_mo_xing(self, message: AstrMessageEvent):
-        """联网模型，结合搜索引擎和AI进行问答"""
-        msg = message.message_str.replace("联网模型", "").strip()
+        """联网模式，结合搜索引擎和AI进行问答"""
+        msg = message.message_str.replace("/联网模式", "").strip()
         
         if not msg:
-            return CommandResult().error("正确指令：联网模型 <提问内容>\n\n示例：联网模型 明日方舟最厉害的是谁")
+            return CommandResult().error("正确指令：/联网模式 <提问内容>\n\n示例：/联网模式 明日方舟最厉害的是谁")
         
         question = msg.strip()
         
