@@ -872,167 +872,137 @@ class Main(Star):
             
     # 自定义HTML模板，用于生成解题结果图片
     SOLUTION_TMPL = '''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body {
-                margin: 0;
-                padding: 40px;
-                background: #ffffff;
-            }
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            background: #ffffff;
+        }
+        
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+        }
+        
+        .grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(to right, #e0e0e0 1px, transparent 1px),
+                linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.3;
+        }
+        
+        .border {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid #000000;
+        }
+        
+        .corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #000000;
+        }
+        
+        .corner-tl {
+            top: -10px;
+            left: -10px;
+            border-right: none;
+            border-bottom: none;
+        }
+        
+        .corner-tr {
+            top: -10px;
+            right: -10px;
+            border-left: none;
+            border-bottom: none;
+        }
+        
+        .corner-bl {
+            bottom: -10px;
+            left: -10px;
+            border-right: none;
+            border-top: none;
+        }
+        
+        .corner-br {
+            bottom: -10px;
+            right: -10px;
+            border-left: none;
+            border-top: none;
+        }
+        
+        /* 只添加必要的内容样式 */
+        .content {
+            position: relative;
+            z-index: 10;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            color: #000000;
+            line-height: 1.5;
+            padding: 20px;
+        }
+        
+        /* 简单的标题样式 */
+        h1 {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        /* 简单的段落样式 */
+        p {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="grid"></div>
+        <div class="border"></div>
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+        
+        <!-- 解题内容 -->
+        <div class="content">
+            <h1>解题结果</h1>
             
-            .container {
-                position: relative;
-                width: 100%;
-                height: 100%;
-                min-height: 400px;
-            }
+            <p><strong>题目：</strong></p>
+            <p>{{ question }}</p>
             
-            .grid {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-image: 
-                    linear-gradient(to right, #e0e0e0 1px, transparent 1px),
-                    linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
-                background-size: 20px 20px;
-                opacity: 0.3;
-            }
+            {% if thinking %}
+            <p><strong>思考过程：</strong></p>
+            <p>{{ thinking }}</p>
+            {% endif %}
             
-            .border {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                border: 2px solid #000000;
-            }
+            <p><strong>答案：</strong></p>
+            <p>{{ answer }}</p>
             
-            .corner {
-                position: absolute;
-                width: 20px;
-                height: 20px;
-                border: 2px solid #000000;
-            }
-            
-            .corner-tl {
-                top: -10px;
-                left: -10px;
-                border-right: none;
-                border-bottom: none;
-            }
-            
-            .corner-tr {
-                top: -10px;
-                right: -10px;
-                border-left: none;
-                border-bottom: none;
-            }
-            
-            .corner-bl {
-                bottom: -10px;
-                left: -10px;
-                border-right: none;
-                border-top: none;
-            }
-            
-            .corner-br {
-                bottom: -10px;
-                right: -10px;
-                border-left: none;
-                border-top: none;
-            }
-            
-            /* 解题内容样式 */
-            .solution-content {
-                position: relative;
-                z-index: 10;
-                font-family: 'Microsoft YaHei', Arial, sans-serif;
-                color: #000000;
-                line-height: 1.6;
-                padding: 20px;
-            }
-            
-            h1 {
-                font-size: 24px;
-                font-weight: bold;
-                margin-bottom: 20px;
-                color: #000000;
-                text-align: center;
-            }
-            
-            .section {
-                margin-bottom: 25px;
-            }
-            
-            h2 {
-                font-size: 20px;
-                font-weight: bold;
-                margin-bottom: 10px;
-                color: #000000;
-                border-bottom: 1px solid #000000;
-                padding-bottom: 5px;
-            }
-            
-            .text-content {
-                font-size: 16px;
-                white-space: pre-wrap;
-                word-break: break-word;
-                background-color: rgba(255, 255, 255, 0.9);
-                padding: 15px;
-                border-radius: 5px;
-            }
-            
-            .time {
-                text-align: right;
-                font-size: 14px;
-                color: #666666;
-                font-style: italic;
-                margin-top: 30px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="grid"></div>
-            <div class="border"></div>
-            <div class="corner corner-tl"></div>
-            <div class="corner corner-tr"></div>
-            <div class="corner corner-bl"></div>
-            <div class="corner corner-br"></div>
-            
-            <!-- 解题内容 -->
-            <div class="solution-content">
-                <h1>解题结果</h1>
-                
-                <div class="section">
-                    <h2>题目</h2>
-                    <div class="text-content">{{ question }}</div>
-                </div>
-                
-                {% if thinking %}
-                <div class="section">
-                    <h2>思考过程</h2>
-                    <div class="text-content">{{ thinking }}</div>
-                </div>
-                {% endif %}
-                
-                <div class="section">
-                    <h2>答案</h2>
-                    <div class="text-content">{{ answer }}</div>
-                </div>
-                
-                {% if time %}
-                <div class="time">生成时间：{{ time }}</div>
-                {% endif %}
-            </div>
+            {% if time %}
+            <p style="text-align: right; font-size: 12px; color: #666;">生成时间：{{ time }}</p>
+            {% endif %}
         </div>
-    </body>
-    </html>
+    </div>
+</body>
+</html>
     '''
     
     async def process_image_question_solving(self, event: AstrMessageEvent, image_url: str):
@@ -1133,11 +1103,18 @@ class Main(Star):
                             options = {
                                 "full_page": True,
                                 "type": "png",
-                                "quality": 95
+                                "quality": 95,
+                                "clip": None,
+                                "omit_background": False,
+                                "scale": "device"
                             }
+                            
+                            logger.debug(f"渲染模板数据：{template_data}")
+                            logger.debug(f"渲染选项：{options}")
                             
                             # 使用html_render方法生成图片
                             image_url = await self.html_render(self.SOLUTION_TMPL, template_data, options=options)
+                            logger.debug(f"生成的图片URL：{image_url}")
                             yield event.image_result(image_url)
                         except Exception as img_error:
                             logger.error(f"生成图片失败：{img_error}")
@@ -1255,11 +1232,18 @@ class Main(Star):
                         options = {
                             "full_page": True,
                             "type": "png",
-                            "quality": 95
+                            "quality": 95,
+                            "clip": None,
+                            "omit_background": False,
+                            "scale": "device"
                         }
+                        
+                        logger.debug(f"渲染模板数据：{template_data}")
+                        logger.debug(f"渲染选项：{options}")
                         
                         # 使用html_render方法生成图片
                         image_url = await self.html_render(self.SOLUTION_TMPL, template_data, options=options)
+                        logger.debug(f"生成的图片URL：{image_url}")
                         yield message.image_result(image_url)
                     except Exception as img_error:
                         logger.error(f"生成图片失败：{img_error}")
