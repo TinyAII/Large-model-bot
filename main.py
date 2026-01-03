@@ -815,40 +815,48 @@ class Main(Star):
             logger.debug(f"OCR API URL = {ocr_url}")
             logger.debug(f"请求参数 = {payload}")
             
-            timeout = aiohttp.ClientTimeout(total=60)
+            # 增加超时时间到120秒
+            timeout = aiohttp.ClientTimeout(total=120)
             async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(ocr_url, json=payload) as resp:
-                    logger.debug(f"OCR API响应状态码：{resp.status}")
-                    logger.debug(f"响应头：{resp.headers}")
-                    
-                    if resp.status != 200:
+                try:
+                    async with session.post(ocr_url, json=payload) as resp:
+                        logger.debug(f"OCR API响应状态码：{resp.status}")
+                        logger.debug(f"响应头：{resp.headers}")
+                        
+                        if resp.status != 200:
+                            resp_text = await resp.text()
+                            logger.error(f"OCR API请求失败，状态码：{resp.status}，响应内容：{resp_text}")
+                            raise Exception(f"OCR API请求失败，状态码：{resp.status}，响应：{resp_text[:100]}...")
+                        
+                        # 先读取响应文本，记录日志
                         resp_text = await resp.text()
-                        logger.error(f"OCR API请求失败，状态码：{resp.status}，响应内容：{resp_text}")
-                        raise Exception(f"OCR API请求失败，状态码：{resp.status}，响应：{resp_text[:100]}...")
-                    
-                    # 先读取响应文本，记录日志
-                    resp_text = await resp.text()
-                    logger.debug(f"OCR API响应内容：{resp_text}")
-                    
-                    try:
-                        result = json.loads(resp_text)
-                    except json.JSONDecodeError as json_error:
-                        logger.error(f"OCR API返回JSON格式错误：{str(json_error)}，响应内容：{resp_text}")
-                        raise Exception(f"OCR API返回JSON格式错误：{str(json_error)}")
-                    
-                    if result.get("code") != 200:
-                        logger.error(f"OCR识别失败：{result.get('msg', '未知错误')}")
-                        raise Exception(f"OCR识别失败：{result.get('msg', '未知错误')}")
-                    
-                    # 获取识别结果
-                    parsed_text = result.get("data", {}).get("ParsedText", "")
-                    if not parsed_text:
-                        # 如果ParsedText为空，尝试从TextLine拼接
-                        text_lines = result.get("data", {}).get("TextLine", [])
-                        parsed_text = "\n".join(text_lines)
-                    
-                    logger.debug(f"OCR识别成功，识别结果：{parsed_text[:100]}...")
-                    return parsed_text.strip()
+                        logger.debug(f"OCR API响应内容：{resp_text}")
+                        
+                        try:
+                            result = json.loads(resp_text)
+                        except json.JSONDecodeError as json_error:
+                            logger.error(f"OCR API返回JSON格式错误：{str(json_error)}，响应内容：{resp_text}")
+                            raise Exception(f"OCR API返回JSON格式错误：{str(json_error)}")
+                        
+                        if result.get("code") != 200:
+                            logger.error(f"OCR识别失败：{result.get('msg', '未知错误')}")
+                            raise Exception(f"OCR识别失败：{result.get('msg', '未知错误')}")
+                        
+                        # 获取识别结果
+                        parsed_text = result.get("data", {}).get("ParsedText", "")
+                        if not parsed_text:
+                            # 如果ParsedText为空，尝试从TextLine拼接
+                            text_lines = result.get("data", {}).get("TextLine", [])
+                            parsed_text = "\n".join(text_lines)
+                        
+                        logger.debug(f"OCR识别成功，识别结果：{parsed_text[:100]}...")
+                        return parsed_text.strip()
+                except asyncio.TimeoutError:
+                    logger.error(f"OCR API请求超时，图片URL：{image_url}")
+                    raise Exception("OCR识别超时，请稍后重试")
+                except aiohttp.ClientError as client_error:
+                    logger.error(f"OCR API网络请求错误：{str(client_error)}，图片URL：{image_url}")
+                    raise Exception(f"OCR识别网络错误：{str(client_error)}")
         except Exception as e:
             logger.error(f"OCR识别出错: {str(e)}")
             logger.exception("OCR识别异常详情")
@@ -859,7 +867,14 @@ class Main(Star):
         try:
             # 1. 调用OCR识别图片中的题目
             yield CommandResult().message("正在识别图片中的题目，请稍候...")
-            question_text = await self.ocr_recognize(image_url)
+            try:
+                question_text = await self.ocr_recognize(image_url)
+            except asyncio.TimeoutError:
+                yield CommandResult().error("OCR识别超时，服务器响应过慢\n\n建议：\n1. 检查网络连接\n2. 确保图片清晰可辨\n3. 稍后重试")
+                return
+            except Exception as ocr_error:
+                yield CommandResult().error(f"OCR识别失败：{str(ocr_error)}\n\n建议：\n1. 检查网络连接\n2. 确保图片清晰可辨\n3. 稍后重试")
+                return
             
             if not question_text:
                 yield CommandResult().error("OCR识别失败，未能从图片中提取到题目内容")
@@ -875,74 +890,81 @@ class Main(Star):
             
             timeout = aiohttp.ClientTimeout(total=120)  # 延长超时时间到120秒
             async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(api_url, params=params) as resp:
-                    if resp.status != 200:
-                        yield CommandResult().error(f"解题助手请求失败，服务器返回错误状态码：{resp.status}")
-                        return
-                    
-                    # 检查响应头的Content-Type
-                    content_type = resp.headers.get('Content-Type', '')
-                    if 'application/json' not in content_type:
-                        # 如果不是json，先尝试读取文本内容
-                        text_content = await resp.text()
-                        yield CommandResult().error(f"解题助手返回格式错误，预期JSON但得到：{text_content[:100]}...")
-                        return
-                    
-                    try:
-                        result = await resp.json()
-                    except json.JSONDecodeError as e:
-                        yield CommandResult().error(f"解题助手返回JSON格式错误：{str(e)}")
-                        return
-                    
-                    # 3. 解析API返回结果
-                    status = result.get("status", "")
-                    if status != "success":
-                        error_msg = result.get("answer", "解题助手请求失败")
-                        yield CommandResult().error(f"解题助手请求失败：{error_msg}")
-                        return
-                    
-                    # 获取data字段
-                    data = result.get("data", {})
-                    answer = data.get("answer", "")
-                    
-                    # 获取created_at
-                    metadata = data.get("metadata", {})
-                    created_at = metadata.get("created_at", "")
-                    
-                    # 4. 提取思考过程和答案
-                    # 从answer中提取思考过程和答案
-                    # answer格式：<Think>思考内容</Think>【解题答案：答案内容】
-                    think_start = answer.find("<Think>")
-                    think_end = answer.find("</Think>")
-                    if think_start != -1 and think_end != -1:
-                        thinking = answer[think_start+6:think_end].strip()
-                        answer_content = answer[think_end+8:].strip()
-                        # 移除可能的【解题答案：】前缀
-                        if answer_content.startswith("【解题答案："):
-                            answer_content = answer_content[7:].strip()
-                            if answer_content.endswith("】"):
-                                answer_content = answer_content[:-1].strip()
-                    else:
-                        # 如果没有<Think>标签，直接使用answer作为答案
-                        thinking = ""  # 没有思考过程
-                        answer_content = answer.strip()
-                    
-                    # 5. 格式化内容
-                    formatted_content = f"题目：\n{question_text}\n\n思考过程：\n{thinking}\n\n答案：\n{answer_content}\n\n时间：\n{created_at}"
-                    
-                    # 6. 生成图片
-                    try:
-                        # 返回处理中的提示
-                        yield CommandResult().message("正在生成图片，请稍候...")
+                try:
+                    async with session.get(api_url, params=params) as resp:
+                        if resp.status != 200:
+                            yield CommandResult().error(f"解题助手请求失败，服务器返回错误状态码：{resp.status}")
+                            return
                         
-                        image_url = await self.text_to_image(formatted_content)
-                        yield event.image_result(image_url)
-                    except Exception as img_error:
-                        logger.error(f"生成图片失败：{img_error}")
-                        # 详细记录错误信息
-                        logger.exception("生成图片时发生异常")
-                        # 如果生成图片失败，直接返回文本格式
-                        yield CommandResult().message(f"图片生成失败，以下是文本答案：\n\n{formatted_content}")
+                        # 检查响应头的Content-Type
+                        content_type = resp.headers.get('Content-Type', '')
+                        if 'application/json' not in content_type:
+                            # 如果不是json，先尝试读取文本内容
+                            text_content = await resp.text()
+                            yield CommandResult().error(f"解题助手返回格式错误，预期JSON但得到：{text_content[:100]}...")
+                            return
+                        
+                        try:
+                            result = await resp.json()
+                        except json.JSONDecodeError as e:
+                            yield CommandResult().error(f"解题助手返回JSON格式错误：{str(e)}")
+                            return
+                        
+                        # 3. 解析API返回结果
+                        status = result.get("status", "")
+                        if status != "success":
+                            error_msg = result.get("answer", "解题助手请求失败")
+                            yield CommandResult().error(f"解题助手请求失败：{error_msg}")
+                            return
+                        
+                        # 获取data字段
+                        data = result.get("data", {})
+                        answer = data.get("answer", "")
+                        
+                        # 获取created_at
+                        metadata = data.get("metadata", {})
+                        created_at = metadata.get("created_at", "")
+                        
+                        # 4. 提取思考过程和答案
+                        # 从answer中提取思考过程和答案
+                        # answer格式：<Think>思考内容</Think>【解题答案：答案内容】
+                        think_start = answer.find("<Think>")
+                        think_end = answer.find("</Think>")
+                        if think_start != -1 and think_end != -1:
+                            thinking = answer[think_start+6:think_end].strip()
+                            answer_content = answer[think_end+8:].strip()
+                            # 移除可能的【解题答案：】前缀
+                            if answer_content.startswith("【解题答案："):
+                                answer_content = answer_content[7:].strip()
+                                if answer_content.endswith("】"):
+                                    answer_content = answer_content[:-1].strip()
+                        else:
+                            # 如果没有<Think>标签，直接使用answer作为答案
+                            thinking = ""  # 没有思考过程
+                            answer_content = answer.strip()
+                        
+                        # 5. 格式化内容
+                        formatted_content = f"题目：\n{question_text}\n\n思考过程：\n{thinking}\n\n答案：\n{answer_content}\n\n时间：\n{created_at}"
+                        
+                        # 6. 生成图片
+                        try:
+                            # 返回处理中的提示
+                            yield CommandResult().message("正在生成图片，请稍候...")
+                            
+                            image_url = await self.text_to_image(formatted_content)
+                            yield event.image_result(image_url)
+                        except Exception as img_error:
+                            logger.error(f"生成图片失败：{img_error}")
+                            # 详细记录错误信息
+                            logger.exception("生成图片时发生异常")
+                            # 如果生成图片失败，直接返回文本格式
+                            yield CommandResult().message(f"图片生成失败，以下是文本答案：\n\n{formatted_content}")
+                except asyncio.TimeoutError:
+                    yield CommandResult().error("解题助手请求超时，服务器响应过慢\n\n建议：\n1. 检查网络连接\n2. 稍后重试")
+                    return
+                except aiohttp.ClientError as client_error:
+                    yield CommandResult().error(f"解题助手网络请求失败：{str(client_error)}\n\n建议：\n1. 检查网络连接\n2. 稍后重试")
+                    return
                         
         except Exception as e:
             logger.error(f"图片解题失败：{str(e)}")
