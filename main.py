@@ -3,9 +3,11 @@ import logging
 import aiohttp
 import urllib.parse
 import json
+import re
 from astrbot.api.all import AstrMessageEvent, CommandResult, Context, Plain
 import astrbot.api.event.filter as filter
 from astrbot.api.star import register, Star
+from astrbot.api.message_components import Image as MsgImage, Reply
 
 logger = logging.getLogger("astrbot")
 
@@ -14,6 +16,8 @@ logger = logging.getLogger("astrbot")
 class Main(Star):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
+        self.waiting_sessions = {}  # 存储等待图片的会话
+        self.timeout_tasks = {}  # 存储超时任务
 
     @filter.command("腾讯元宝")
     async def tencent_yuanbao(self, message: AstrMessageEvent):
@@ -731,6 +735,197 @@ class Main(Star):
     async def terminate(self):
         """插件卸载/重载时调用"""
         pass
+        
+    async def extract_image_from_event(self, event: AstrMessageEvent) -> str:
+        """从事件中提取图片URL"""
+        messages = event.get_messages()
+
+        # 首先检查当前消息中的图片
+        for msg in messages:
+            # 标准图片组件
+            if isinstance(msg, MsgImage):
+                if hasattr(msg, "url") and msg.url:
+                    return msg.url.strip()
+                if hasattr(msg, "file") and msg.file:
+                    # 从file字段提取URL - 处理微信格式
+                    file_content = str(msg.file)
+                    if "http" in file_content:
+                        # 提取URL并移除反引号
+                        urls = re.findall(r"https?://[^\s\`\']+", file_content)
+                        if urls:
+                            return urls[0].strip("`'")
+
+            # QQ官方平台特殊处理
+            if hasattr(msg, "type") and msg.type == "Plain":
+                text = str(msg.text) if hasattr(msg, "text") else str(msg)
+                if "attachmentType=" in text and "image" in text:
+                    # 这是QQ官方的图片消息格式，需要后续消息处理
+                    continue
+
+        # 检查引用消息中的图片（Telegram等平台）
+        try:
+            # 查找Reply组件
+            for msg in messages:
+                if isinstance(msg, Reply):
+                    # Reply组件包含原始消息的信息
+                    if hasattr(msg, "chain") and msg.chain:
+                        # 在引用消息的chain中查找图片
+                        for reply_msg in msg.chain:
+                            if isinstance(reply_msg, MsgImage):
+                                if hasattr(reply_msg, "url") and reply_msg.url:
+                                    return reply_msg.url.strip()
+                                if hasattr(reply_msg, "file") and reply_msg.file:
+                                    file_content = str(reply_msg.file)
+                                    if "http" in file_content:
+                                        urls = re.findall(r"https?://[^\s\`\']+", file_content)
+                                        if urls:
+                                            return urls[0].strip("`'")
+
+        except Exception as e:
+            logger.warning(f"检查引用消息图片时出错: {str(e)}")
+
+        return None
+        
+    async def timeout_check(self, user_id: str, event: AstrMessageEvent):
+        """检查用户发送图片是否超时"""
+        try:
+            await asyncio.sleep(30)  # 等待30秒
+            if user_id in self.waiting_sessions:
+                # 超时，发送消息
+                await event.send(event.plain_result("⏰ 图片发送超时，请重新发送命令开始新的请求"))
+                # 清理会话和超时任务
+                del self.waiting_sessions[user_id]
+                if user_id in self.timeout_tasks:
+                    del self.timeout_tasks[user_id]
+        except asyncio.CancelledError:
+            # 任务被取消，说明用户已经发送了图片
+            pass
+        except Exception as e:
+            logger.error(f"超时检查出错: {str(e)}")
+            
+    async def ocr_recognize(self, image_url: str) -> str:
+        """调用OCR API识别图片中的文字"""
+        try:
+            ocr_url = "https://api.pearktrue.cn/api/ocr/"
+            payload = {
+                "file": image_url
+            }
+            
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(ocr_url, json=payload) as resp:
+                    if resp.status != 200:
+                        raise Exception(f"OCR API请求失败，状态码：{resp.status}")
+                    
+                    result = await resp.json()
+                    if result.get("code") != 200:
+                        raise Exception(f"OCR识别失败：{result.get('msg', '未知错误')}")
+                    
+                    # 获取识别结果
+                    parsed_text = result.get("data", {}).get("ParsedText", "")
+                    if not parsed_text:
+                        # 如果ParsedText为空，尝试从TextLine拼接
+                        text_lines = result.get("data", {}).get("TextLine", [])
+                        parsed_text = "\n".join(text_lines)
+                    
+                    return parsed_text.strip()
+        except Exception as e:
+            logger.error(f"OCR识别出错: {str(e)}")
+            raise
+            
+    async def process_image_question_solving(self, event: AstrMessageEvent, image_url: str):
+        """处理图片解题的完整流程"""
+        try:
+            # 1. 调用OCR识别图片中的题目
+            yield CommandResult().message("正在识别图片中的题目，请稍候...")
+            question_text = await self.ocr_recognize(image_url)
+            
+            if not question_text:
+                yield CommandResult().error("OCR识别失败，未能从图片中提取到题目内容")
+                return
+            
+            # 2. 调用万能解题助手API
+            yield CommandResult().message("正在解题，请稍候...")
+            api_url = "https://api.jkyai.top/API/wnjtzs.php"
+            params = {
+                "question": question_text,
+                "type": "json"  # 返回json格式，便于解析
+            }
+            
+            timeout = aiohttp.ClientTimeout(total=120)  # 延长超时时间到120秒
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(api_url, params=params) as resp:
+                    if resp.status != 200:
+                        yield CommandResult().error(f"解题助手请求失败，服务器返回错误状态码：{resp.status}")
+                        return
+                    
+                    # 检查响应头的Content-Type
+                    content_type = resp.headers.get('Content-Type', '')
+                    if 'application/json' not in content_type:
+                        # 如果不是json，先尝试读取文本内容
+                        text_content = await resp.text()
+                        yield CommandResult().error(f"解题助手返回格式错误，预期JSON但得到：{text_content[:100]}...")
+                        return
+                    
+                    try:
+                        result = await resp.json()
+                    except json.JSONDecodeError as e:
+                        yield CommandResult().error(f"解题助手返回JSON格式错误：{str(e)}")
+                        return
+                    
+                    # 3. 解析API返回结果
+                    status = result.get("status", "")
+                    if status != "success":
+                        error_msg = result.get("answer", "解题助手请求失败")
+                        yield CommandResult().error(f"解题助手请求失败：{error_msg}")
+                        return
+                    
+                    # 获取data字段
+                    data = result.get("data", {})
+                    answer = data.get("answer", "")
+                    
+                    # 获取created_at
+                    metadata = data.get("metadata", {})
+                    created_at = metadata.get("created_at", "")
+                    
+                    # 4. 提取思考过程和答案
+                    # 从answer中提取思考过程和答案
+                    # answer格式：<Think>思考内容</Think>【解题答案：答案内容】
+                    think_start = answer.find("<Think>")
+                    think_end = answer.find("</Think>")
+                    if think_start != -1 and think_end != -1:
+                        thinking = answer[think_start+6:think_end].strip()
+                        answer_content = answer[think_end+8:].strip()
+                        # 移除可能的【解题答案：】前缀
+                        if answer_content.startswith("【解题答案："):
+                            answer_content = answer_content[7:].strip()
+                            if answer_content.endswith("】"):
+                                answer_content = answer_content[:-1].strip()
+                    else:
+                        # 如果没有<Think>标签，直接使用answer作为答案
+                        thinking = ""  # 没有思考过程
+                        answer_content = answer.strip()
+                    
+                    # 5. 格式化内容
+                    formatted_content = f"题目：\n{question_text}\n\n思考过程：\n{thinking}\n\n答案：\n{answer_content}\n\n时间：\n{created_at}"
+                    
+                    # 6. 生成图片
+                    try:
+                        # 返回处理中的提示
+                        yield CommandResult().message("正在生成图片，请稍候...")
+                        
+                        image_url = await self.text_to_image(formatted_content)
+                        yield event.image_result(image_url)
+                    except Exception as img_error:
+                        logger.error(f"生成图片失败：{img_error}")
+                        # 详细记录错误信息
+                        logger.exception("生成图片时发生异常")
+                        # 如果生成图片失败，直接返回文本格式
+                        yield CommandResult().message(f"图片生成失败，以下是文本答案：\n\n{formatted_content}")
+                        
+        except Exception as e:
+            logger.error(f"图片解题失败：{str(e)}")
+            yield CommandResult().error(f"图片解题失败：{str(e)}")
     
     @filter.command("解题助手")
     async def jie_ti_zhu_shou(self, message: AstrMessageEvent):
@@ -831,3 +1026,58 @@ class Main(Star):
         except Exception as e:
             logger.error(f"解题助手请求时发生错误：{e}")
             yield CommandResult().error(f"请求时发生错误：{str(e)}")
+    
+    @filter.command("图片解题助手")
+    async def tu_pian_jie_ti_zhu_shou(self, message: AstrMessageEvent):
+        """图片解题助手，支持识别图片中的题目并解题，返回图片格式的解题结果"""
+        user_id = message.get_sender_id()
+        
+        # 检查当前消息是否包含图片
+        image_url = await self.extract_image_from_event(message)
+        if image_url:
+            # 如果找到图片，直接进行处理
+            async for result in self.process_image_question_solving(message, image_url):
+                yield result
+            return
+        
+        # 如果没有图片，设置等待状态
+        self.waiting_sessions[user_id] = {
+            "timestamp": asyncio.get_event_loop().time(),
+            "event": message  # 保存事件对象用于后续处理
+        }
+        
+        # 创建30秒超时任务
+        if user_id in self.timeout_tasks:
+            self.timeout_tasks[user_id].cancel()  # 取消之前的超时任务
+        
+        timeout_task = asyncio.create_task(self.timeout_check(user_id, message))
+        self.timeout_tasks[user_id] = timeout_task
+        
+        yield CommandResult().message("📷 请发送要识别的图片（30秒内有效）")
+    
+    @filter.event_message_type(filter.EventMessageType.ALL)
+    async def on_message(self, event: AstrMessageEvent):
+        """监听所有消息，处理等待中的图片请求"""
+        user_id = event.get_sender_id()
+        
+        # 检查用户是否在等待图片
+        if user_id not in self.waiting_sessions:
+            return
+        
+        # 提取图片URL
+        image_url = await self.extract_image_from_event(event)
+        if not image_url:
+            return  # 不是图片消息，继续等待
+        
+        # 找到图片，开始处理
+        original_event = self.waiting_sessions[user_id]["event"]
+        
+        # 清理会话和超时任务
+        del self.waiting_sessions[user_id]
+        if user_id in self.timeout_tasks:
+            self.timeout_tasks[user_id].cancel()
+            del self.timeout_tasks[user_id]
+        
+        # 处理图片解题
+        async for result in self.process_image_question_solving(original_event, image_url):
+            await original_event.send(result)
