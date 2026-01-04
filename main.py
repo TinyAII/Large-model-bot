@@ -9,6 +9,180 @@ import astrbot.api.event.filter as filter
 from astrbot.api.star import register, Star
 from astrbot.api.message_components import Image as MsgImage, Reply
 
+# 定义解题助手HTML模板
+SOLUTION_TEMPLATE = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            margin: 0;
+            padding: 30px;
+            background: #ffffff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        .container {
+            position: relative;
+            width: 600px;  /* 调整宽度 */
+            margin: 0 auto;
+        }
+        
+        .grid-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            min-height: 100%;
+            background-image: 
+                linear-gradient(to right, #e0e0e0 1px, transparent 1px),
+                linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
+            background-size: 25px 25px;
+            opacity: 0.2;
+            z-index: 0;
+        }
+        
+        .main-border {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            min-height: 100%;
+            border: 2px solid #000000;
+            z-index: 1;
+        }
+        
+        .corner {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #000000;
+            z-index: 2;
+        }
+        
+        .corner-tl {
+            top: -8px;
+            left: -8px;
+            border-right: none;
+            border-bottom: none;
+        }
+        
+        .corner-tr {
+            top: -8px;
+            right: -8px;
+            border-left: none;
+            border-bottom: none;
+        }
+        
+        .corner-bl {
+            bottom: -8px;
+            left: -8px;
+            border-right: none;
+            border-top: none;
+        }
+        
+        .corner-br {
+            bottom: -8px;
+            right: -8px;
+            border-left: none;
+            border-top: none;
+        }
+        
+        .solution-content {
+            position: relative;
+            z-index: 3;
+            padding: 40px 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #000000;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #000000;
+        }
+        
+        .section-content {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #333333;
+        }
+        
+        .question {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        
+        .thinking {
+            background-color: #e8f4f8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        
+        .answer {
+            background-color: #f0f8f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        
+        .time {
+            font-size: 12px;
+            color: #999999;
+            text-align: right;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="grid-background"></div>
+        <div class="main-border"></div>
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+        
+        <div class="solution-content">
+            <div class="section">
+                <div class="section-title">题目</div>
+                <div class="section-content question">
+                    {{ question }}
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">思考过程</div>
+                <div class="section-content thinking">
+                    {{ thinking }}
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">答案</div>
+                <div class="section-content answer">
+                    {{ answer }}
+                </div>
+            </div>
+            
+            <div class="time">
+                {{ time }}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+'''
+
 logger = logging.getLogger("astrbot")
 
 
@@ -826,7 +1000,7 @@ class Main(Star):
                         if resp.status != 200:
                             resp_text = await resp.text()
                             logger.error(f"OCR API请求失败，状态码：{resp.status}，响应内容：{resp_text}")
-                            raise Exception(f"OCR API请求失败，状态码：{resp.status}，请稍后重试")
+                            raise Exception(f"OCR API请求失败，状态码：{resp.status}，响应：{resp_text[:100]}...")
                         
                         # 先读取响应文本，记录日志
                         resp_text = await resp.text()
@@ -836,16 +1010,11 @@ class Main(Star):
                             result = json.loads(resp_text)
                         except json.JSONDecodeError as json_error:
                             logger.error(f"OCR API返回JSON格式错误：{str(json_error)}，响应内容：{resp_text}")
-                            raise Exception(f"OCR API返回格式错误，请稍后重试")
+                            raise Exception(f"OCR API返回JSON格式错误：{str(json_error)}")
                         
                         if result.get("code") != 200:
-                            msg = result.get('msg', '未知错误')
-                            logger.error(f"OCR识别失败：{msg}")
-                            # 更友好的错误提示
-                            user_msg = "OCR识别失败，请检查图片清晰度或稍后重试"
-                            if "联系站长" in msg:
-                                user_msg = "OCR服务暂时不可用，请稍后重试"
-                            raise Exception(user_msg)
+                            logger.error(f"OCR识别失败：{result.get('msg', '未知错误')}")
+                            raise Exception(f"OCR识别失败：{result.get('msg', '未知错误')}")
                         
                         # 获取识别结果
                         parsed_text = result.get("data", {}).get("ParsedText", "")
@@ -854,9 +1023,6 @@ class Main(Star):
                             text_lines = result.get("data", {}).get("TextLine", [])
                             parsed_text = "\n".join(text_lines)
                         
-                        if not parsed_text.strip():
-                            raise Exception("OCR识别失败，未能从图片中提取到文字内容")
-                        
                         logger.debug(f"OCR识别成功，识别结果：{parsed_text[:100]}...")
                         return parsed_text.strip()
                 except asyncio.TimeoutError:
@@ -864,147 +1030,12 @@ class Main(Star):
                     raise Exception("OCR识别超时，请稍后重试")
                 except aiohttp.ClientError as client_error:
                     logger.error(f"OCR API网络请求错误：{str(client_error)}，图片URL：{image_url}")
-                    raise Exception(f"网络连接错误，请检查网络或稍后重试")
+                    raise Exception(f"OCR识别网络错误：{str(client_error)}")
         except Exception as e:
             logger.error(f"OCR识别出错: {str(e)}")
             logger.exception("OCR识别异常详情")
             raise
             
-    # 自定义HTML模板，用于生成解题结果图片
-    SOLUTION_TMPL = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body {
-            margin: 0;
-            padding: 40px;
-            background: #ffffff;
-        }
-        
-        .container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            min-height: 400px;
-        }
-        
-        .grid {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(to right, #e0e0e0 1px, transparent 1px),
-                linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
-            background-size: 20px 20px;
-            opacity: 0.3;
-        }
-        
-        .border {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: 2px solid #000000;
-        }
-        
-        .corner {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #000000;
-        }
-        
-        .corner-tl {
-            top: -10px;
-            left: -10px;
-            border-right: none;
-            border-bottom: none;
-        }
-        
-        .corner-tr {
-            top: -10px;
-            right: -10px;
-            border-left: none;
-            border-bottom: none;
-        }
-        
-        .corner-bl {
-            bottom: -10px;
-            left: -10px;
-            border-right: none;
-            border-top: none;
-        }
-        
-        .corner-br {
-            bottom: -10px;
-            right: -10px;
-            border-left: none;
-            border-top: none;
-        }
-        
-        /* 只添加必要的内容样式 */
-        .content {
-            position: relative;
-            z-index: 10;
-            font-family: Arial, sans-serif;
-            font-size: 16px;
-            color: #000000;
-            line-height: 1.5;
-            padding: 20px;
-        }
-        
-        /* 简单的标题样式 */
-        h1 {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        
-        /* 简单的段落样式 */
-        p {
-            margin-bottom: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="grid"></div>
-        <div class="border"></div>
-        <div class="corner corner-tl"></div>
-        <div class="corner corner-tr"></div>
-        <div class="corner corner-bl"></div>
-        <div class="corner corner-br"></div>
-        
-        <!-- 解题内容 -->
-        <div class="content">
-            <h1>解题结果</h1>
-            
-            <p><strong>题目：</strong></p>
-            <p>{{ question }}</p>
-            
-            {% if thinking %}
-            <p><strong>思考过程：</strong></p>
-            <p>{{ thinking }}</p>
-            {% endif %}
-            
-            <p><strong>答案：</strong></p>
-            <p>{{ answer }}</p>
-            
-            {% if time %}
-            <p style="text-align: right; font-size: 12px; color: #666;">生成时间：{{ time }}</p>
-            {% endif %}
-        </div>
-    </div>
-</body>
-</html>
-    '''
-    
     async def process_image_question_solving(self, event: AstrMessageEvent, image_url: str):
         """处理图片解题的完整流程"""
         try:
@@ -1086,56 +1117,46 @@ class Main(Star):
                             thinking = ""  # 没有思考过程
                             answer_content = answer.strip()
                         
-                        # 5. 生成图片 - 使用自定义HTML模板
+                        # 6. 生成图片
                         try:
                             # 返回处理中的提示
                             yield CommandResult().message("正在生成图片，请稍候...")
                             
                             # 使用自定义HTML模板生成图片
-                            template_data = {
+                            render_data = {
                                 "question": question_text,
                                 "thinking": thinking,
                                 "answer": answer_content,
                                 "time": created_at
                             }
                             
-                            # 渲染选项
+                            # 截图选项
                             options = {
-                                "full_page": True,
+                                "full_page": True,  # 让高度自适应内容
                                 "type": "png",
                                 "quality": 95,
-                                "clip": None,
                                 "omit_background": False,
-                                "scale": "device"
+                                "animations": "disabled",
+                                "caret": "hide"
                             }
                             
-                            logger.debug(f"渲染模板数据：{template_data}")
-                            logger.debug(f"渲染选项：{options}")
-                            
-                            # 使用html_render方法生成图片
-                            image_url = await self.html_render(self.SOLUTION_TMPL, template_data, options=options)
-                            logger.debug(f"生成的图片URL：{image_url}")
+                            # 使用html_render生成图片
+                            image_url = await self.html_render(SOLUTION_TEMPLATE, render_data, options=options)
                             yield event.image_result(image_url)
                         except Exception as img_error:
                             logger.error(f"生成图片失败：{img_error}")
                             # 详细记录错误信息
                             logger.exception("生成图片时发生异常")
-                            # 回退到基本的text_to_image方法
-                            try:
-                                logger.info("尝试使用基本text_to_image方法生成图片")
-                                formatted_content = f"题目：\n{question_text}\n\n思考过程：\n{thinking}\n\n答案：\n{answer_content}\n\n时间：\n{created_at}"
-                                image_url = await self.text_to_image(formatted_content)
-                                yield event.image_result(image_url)
-                            except Exception as basic_img_error:
-                                logger.error(f"基本text_to_image方法也失败：{basic_img_error}")
-                                # 如果生成图片失败，直接返回文本格式
-                                yield CommandResult().message(f"图片生成失败，以下是文本答案：\n\n题目：\n{question_text}\n\n思考过程：\n{thinking}\n\n答案：\n{answer_content}\n\n时间：\n{created_at}")
+                            # 如果生成图片失败，直接返回文本格式
+                            formatted_content = f"题目：\n{question_text}\n\n思考过程：\n{thinking}\n\n答案：\n{answer_content}\n\n时间：\n{created_at}"
+                            yield CommandResult().message(f"图片生成失败，以下是文本答案：\n\n{formatted_content}")
                 except asyncio.TimeoutError:
                     yield CommandResult().error("解题助手请求超时，服务器响应过慢\n\n建议：\n1. 检查网络连接\n2. 稍后重试")
                     return
                 except aiohttp.ClientError as client_error:
                     yield CommandResult().error(f"解题助手网络请求失败：{str(client_error)}\n\n建议：\n1. 检查网络连接\n2. 稍后重试")
                     return
+                        
         except Exception as e:
             logger.error(f"图片解题失败：{str(e)}")
             logger.exception("图片解题异常详情")
@@ -1215,50 +1236,39 @@ class Main(Star):
                         thinking = ""  # 没有思考过程
                         answer_content = answer.strip()
                     
-                    # 4. 生成图片 - 使用自定义HTML模板
+                    # 5. 生成图片
                     try:
                         # 先返回一个处理中的提示
                         yield CommandResult().message("正在生成图片，请稍候...")
                         
                         # 使用自定义HTML模板生成图片
-                        template_data = {
+                        render_data = {
                             "question": question,
                             "thinking": thinking,
                             "answer": answer_content,
                             "time": created_at
                         }
                         
-                        # 渲染选项
+                        # 截图选项
                         options = {
-                            "full_page": True,
+                            "full_page": True,  # 让高度自适应内容
                             "type": "png",
                             "quality": 95,
-                            "clip": None,
                             "omit_background": False,
-                            "scale": "device"
+                            "animations": "disabled",
+                            "caret": "hide"
                         }
                         
-                        logger.debug(f"渲染模板数据：{template_data}")
-                        logger.debug(f"渲染选项：{options}")
-                        
-                        # 使用html_render方法生成图片
-                        image_url = await self.html_render(self.SOLUTION_TMPL, template_data, options=options)
-                        logger.debug(f"生成的图片URL：{image_url}")
+                        # 使用html_render生成图片
+                        image_url = await self.html_render(SOLUTION_TEMPLATE, render_data, options=options)
                         yield message.image_result(image_url)
                     except Exception as img_error:
                         logger.error(f"生成图片失败：{img_error}")
                         # 详细记录错误信息
                         logger.exception("生成图片时发生异常")
-                        # 回退到基本的text_to_image方法
-                        try:
-                            logger.info("尝试使用基本text_to_image方法生成图片")
-                            formatted_content = f"题目：\n{question}\n\n思考过程：\n{thinking}\n\n答案：\n{answer_content}\n\n时间：\n{created_at}"
-                            image_url = await self.text_to_image(formatted_content)
-                            yield message.image_result(image_url)
-                        except Exception as basic_img_error:
-                            logger.error(f"基本text_to_image方法也失败：{basic_img_error}")
-                            # 如果生成图片失败，直接返回文本格式
-                            yield CommandResult().message(f"图片生成失败，以下是文本答案：\n\n题目：\n{question}\n\n思考过程：\n{thinking}\n\n答案：\n{answer_content}\n\n时间：\n{created_at}")
+                        # 如果生成图片失败，直接返回文本格式
+                        formatted_content = f"题目：\n{question}\n\n思考过程：\n{thinking}\n\n答案：\n{answer_content}\n\n时间：\n{created_at}"
+                        yield CommandResult().message(f"图片生成失败，以下是文本答案：\n\n{formatted_content}")
                         
         except aiohttp.ClientError as e:
             logger.error(f"网络连接错误：{e}")
