@@ -1135,7 +1135,7 @@ class Main(Star):
                     model_part, desc_part = line.split(' - ', 1)
                     
                     # 检测是否包含示例格式
-                    if '<提问内容>' in model_part or '<6位数字>' in model_part or '<图片>' in model_part:
+                    if '<提问内容>' in model_part or '<6位数字>' in model_part or '<图片>' in model_part or '<题目内容>' in model_part:
                         # 这是一个模型命令格式
                         model_format = model_part.strip()
                         model_desc = desc_part.strip()
@@ -1147,7 +1147,7 @@ class Main(Star):
                             model_name = model_format
                         
                         # 生成示例
-                        example = model_format.replace('<提问内容>', '1+1').replace('<6位数字>', '123456').replace('<图片>', '[图片]')
+                        example = model_format.replace('<提问内容>', '1+1').replace('<6位数字>', '123456').replace('<图片>', '[图片]').replace('<题目内容>', '1+1')
                         
                         # 生成HTML
                         html_parts.append(f'<div class="model-item">')
