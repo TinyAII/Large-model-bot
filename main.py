@@ -18,6 +18,10 @@ class Main(Star):
         super().__init__(context)
         self.waiting_sessions = {}  # 存储等待图片的会话
         self.timeout_tasks = {}  # 存储超时任务
+    
+    def _empty(self):
+        """空方法，用于解决框架调用问题"""
+        pass
 
     @filter.command("腾讯元宝")
     async def tencent_yuanbao(self, message: AstrMessageEvent):
