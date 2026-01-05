@@ -930,7 +930,7 @@ class Main(Star):
                 return
             
             # 2. 调用万能解题助手API
-            yield CommandResult().message("正在解题，请稍候...")
+            yield CommandResult().message("收到题目，马上解题，请稍后")
             api_url = "https://api.jkyai.top/API/wnjtzs.php"
             params = {
                 "question": question_text,
@@ -1273,6 +1273,9 @@ class Main(Star):
         question = msg.strip()
         
         try:
+            # 先返回一个处理中的提示
+            yield CommandResult().message("收到题目，马上解题，请稍后")
+            
             # 1. 调用万能解题助手API
             api_url = "https://api.jkyai.top/API/wnjtzs.php"
             params = {
