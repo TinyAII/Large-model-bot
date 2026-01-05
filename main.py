@@ -1114,58 +1114,105 @@ class Main(Star):
             lines = text.split('\n')
             html_parts = []
             current_section = ""
+            is_solution = False
             
-            for line in lines:
-                line = line.rstrip()
-                
-                # 检测是否为大模型菜单
-                if line == "大模型菜单":
-                    # 大模型菜单标题已在模板中处理
-                    continue
-                
-                # 检测分类标题
-                elif line.startswith('一、') or line.startswith('二、') or line.startswith('三、') or line.startswith('四、'):
-                    category_name = line.split('、')[1]
-                    html_parts.append(f'<h2 class="category-title">{category_name}</h2>')
-                    continue
-                
-                # 检测模型条目
-                elif ' - ' in line:
-                    # 解析模型条目
-                    model_part, desc_part = line.split(' - ', 1)
+            # 检查是否为解题助手内容
+            if any('题目：' in line for line in lines) and any('答案：' in line for line in lines):
+                is_solution = True
+            
+            if is_solution:
+                # 处理解题助手内容
+                for line in lines:
+                    line = line.rstrip()
                     
-                    # 检测是否包含示例格式
-                    if '<提问内容>' in model_part or '<6位数字>' in model_part or '<图片>' in model_part or '<题目内容>' in model_part:
-                        # 这是一个模型命令格式
-                        model_format = model_part.strip()
-                        model_desc = desc_part.strip()
-                        
-                        # 提取模型名称
-                        if ' ' in model_format:
-                            model_name = model_format.split(' ')[0]
-                        else:
-                            model_name = model_format
-                        
-                        # 生成示例
-                        example = model_format.replace('<提问内容>', '1+1').replace('<6位数字>', '123456').replace('<图片>', '[图片]').replace('<题目内容>', '1+1')
-                        
-                        # 生成HTML
-                        html_parts.append(f'<div class="model-item">')
-                        html_parts.append(f'<span class="model-name">{model_name}</span> ')
-                        html_parts.append(f'<span class="model-format">{model_format}</span> ')
-                        html_parts.append(f'<span class="separator">---------------</span> ')
-                        html_parts.append(f'<span class="example">示例：{example}（注意有空格）</span> ')
-                        html_parts.append(f'<span class="separator">----------</span> ')
-                        html_parts.append(f'<span class="model-desc">{model_desc}</span>')
-                        html_parts.append(f'</div>')
+                    # 检测标题行
+                    if line.startswith('题目：'):
+                        current_section = "question"
+                        html_parts.append('<div class="section-title">题目：</div>')
+                        html_parts.append('<div class="question-section">')
+                        continue
+                    elif line.startswith('思考过程：'):
+                        current_section = "thinking"
+                        html_parts.append('</div>')  # 结束题目区块
+                        html_parts.append('<div class="section-title">思考过程：</div>')
+                        html_parts.append('<div class="thinking-section">')
+                        continue
+                    elif line.startswith('答案：'):
+                        current_section = "answer"
+                        html_parts.append('</div>')  # 结束思考过程区块
+                        html_parts.append('<div class="section-title">答案：</div>')
+                        html_parts.append('<div class="answer-section">')
+                        continue
+                    elif line.startswith('时间：'):
+                        current_section = "time"
+                        html_parts.append('</div>')  # 结束答案区块
+                        html_parts.append('<div class="section-title">时间：</div>')
+                        continue
+                    
+                    # 处理内容行
+                    if line.strip():
+                        html_parts.append(f'<div class="content-line">{line}</div>')
                 
-                # 处理空行
-                elif line.strip() == '':
-                    continue
-                
-                # 处理其他文本行
-                else:
-                    html_parts.append(f'<div class="content-line">{line}</div>')
+                # 确保所有区块都关闭
+                if current_section == "question":
+                    html_parts.append('</div>')
+                elif current_section == "thinking":
+                    html_parts.append('</div>')
+                elif current_section == "answer":
+                    html_parts.append('</div>')
+            else:
+                # 处理大模型菜单内容
+                for line in lines:
+                    line = line.rstrip()
+                    
+                    # 检测是否为大模型菜单
+                    if line == "大模型菜单":
+                        # 大模型菜单标题已在模板中处理
+                        continue
+                    
+                    # 检测分类标题
+                    elif line.startswith('一、') or line.startswith('二、') or line.startswith('三、') or line.startswith('四、'):
+                        category_name = line.split('、')[1]
+                        html_parts.append(f'<h2 class="category-title">{category_name}</h2>')
+                        continue
+                    
+                    # 检测模型条目
+                    elif ' - ' in line:
+                        # 解析模型条目
+                        model_part, desc_part = line.split(' - ', 1)
+                        
+                        # 检测是否包含示例格式
+                        if '<提问内容>' in model_part or '<6位数字>' in model_part or '<图片>' in model_part or '<题目内容>' in model_part:
+                            # 这是一个模型命令格式
+                            model_format = model_part.strip()
+                            model_desc = desc_part.strip()
+                            
+                            # 提取模型名称
+                            if ' ' in model_format:
+                                model_name = model_format.split(' ')[0]
+                            else:
+                                model_name = model_format
+                            
+                            # 生成示例
+                            example = model_format.replace('<提问内容>', '1+1').replace('<6位数字>', '123456').replace('<图片>', '[图片]').replace('<题目内容>', '1+1')
+                            
+                            # 生成HTML
+                            html_parts.append(f'<div class="model-item">')
+                            html_parts.append(f'<span class="model-name">{model_name}</span> ')
+                            html_parts.append(f'<span class="model-format">{model_format}</span> ')
+                            html_parts.append(f'<span class="separator">---------------</span> ')
+                            html_parts.append(f'<span class="example">示例：{example}（注意有空格）</span> ')
+                            html_parts.append(f'<span class="separator">----------</span> ')
+                            html_parts.append(f'<span class="model-desc">{model_desc}</span>')
+                            html_parts.append(f'</div>')
+                    
+                    # 处理空行
+                    elif line.strip() == '':
+                        continue
+                    
+                    # 处理其他文本行
+                    else:
+                        html_parts.append(f'<div class="content-line">{line}</div>')
             
             # 组装最终HTML内容
             formatted_html = '\n'.join(html_parts)
