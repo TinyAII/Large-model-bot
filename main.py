@@ -32,7 +32,7 @@ class Main(Star):
         # 添加提示词
         prompt = f"{question}\n\n注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/yuanbao.php"
+        api_url = "https://yunzhiapi.cn/API/yuanbao.php"
         params = {
             "question": prompt
         }
@@ -71,7 +71,7 @@ class Main(Star):
         # 添加提示词
         prompt = f"{question}\n\n注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/depsek3.2.php"
+        api_url = "https://yunzhiapi.cn/API/depsek3.2.php"
         params = {
             "question": prompt
         }
@@ -110,7 +110,7 @@ class Main(Star):
         # 添加提示词
         prompt = f"{question}\n\n注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/depsek3.1.php"
+        api_url = "https://yunzhiapi.cn/API/depsek3.1.php"
         params = {
             "question": prompt
         }
@@ -159,7 +159,7 @@ class Main(Star):
         # 添加提示词
         prompt = f"{question}\n\n注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/gpt5-nano/index.php"
+        api_url = "https://yunzhiapi.cn/API/gpt5-nano/index.php"
         params = {
             "question": prompt,
             "uid": uid
@@ -209,7 +209,7 @@ class Main(Star):
         # 添加提示词
         prompt = f"{question}\n\n注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/hiku-4.5/index.php"
+        api_url = "https://yunzhiapi.cn/API/hiku-4.5/index.php"
         params = {
             "question": prompt,
             "uid": uid
@@ -259,7 +259,7 @@ class Main(Star):
         # 添加违禁词提示
         question_with_prompt = f"{question} 注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/qwen3-coder/index.php"
+        api_url = "https://yunzhiapi.cn/API/qwen3-coder/index.php"
         params = {
             "question": question_with_prompt,
             "uid": uid
@@ -299,7 +299,7 @@ class Main(Star):
         # 添加违禁词提示
         question_with_prompt = f"{question} 注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/deepseek.php"
+        api_url = "https://yunzhiapi.cn/API/deepseek.php"
         params = {
             "question": question_with_prompt
         }
@@ -339,7 +339,7 @@ class Main(Star):
         # 添加违禁词提示
         question_with_prompt = f"{question} 注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/glm4.6.php"
+        api_url = "https://yunzhiapi.cn/API/glm4.6.php"
         params = {
             "question": question_with_prompt
         }
@@ -378,7 +378,7 @@ class Main(Star):
         # 添加违禁词提示
         content_with_prompt = f"{content} 注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/kkaimx.php"
+        api_url = "https://yunzhiapi.cn/API/kkaimx.php"
         params = {
             "content": content_with_prompt
         }
@@ -417,7 +417,7 @@ class Main(Star):
         # 添加违禁词提示
         question_with_prompt = f"{question} 注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/ling-1t.php"
+        api_url = "https://yunzhiapi.cn/API/ling-1t.php"
         params = {
             "question": question_with_prompt
         }
@@ -456,7 +456,7 @@ class Main(Star):
         # 添加违禁词提示
         question_with_prompt = f"{question} 注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/doubao.php"
+        api_url = "https://yunzhiapi.cn/API/doubao.php"
         params = {
             "question": question_with_prompt
         }
@@ -505,7 +505,7 @@ class Main(Star):
         # 添加违禁词提示
         question_with_prompt = f"{question} 注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/chatgpt-oss/index.php"
+        api_url = "https://yunzhiapi.cn/API/chatgpt-oss/index.php"
         params = {
             "question": question_with_prompt,
             "uid": uid
@@ -555,7 +555,7 @@ class Main(Star):
         # 添加违禁词提示
         question_with_prompt = f"{question} 注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/gemini2.5/index.php"
+        api_url = "https://yunzhiapi.cn/API/gemini2.5/index.php"
         params = {
             "question": question_with_prompt,
             "uid": uid
@@ -595,7 +595,7 @@ class Main(Star):
         # 添加违禁词提示
         question_with_prompt = f"{question} 注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/qwen3.php"
+        api_url = "https://yunzhiapi.cn/API/qwen3.php"
         params = {
             "question": question_with_prompt
         }
@@ -634,7 +634,7 @@ class Main(Star):
         # 添加违禁词提示
         content_with_prompt = f"{content} 注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/xfxhx1.php"
+        api_url = "https://yunzhiapi.cn/API/xfxhx1.php"
         params = {
             "content": content_with_prompt
         }
@@ -684,7 +684,7 @@ class Main(Star):
         # 添加违禁词提示
         question_with_prompt = f"{question} 注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。"
         
-        api_url = "https://api.jkyai.top/API/xiaomi/index.php"
+        api_url = "https://yunzhiapi.cn/API/xiaomi/index.php"
         params = {
             "question": question_with_prompt,
             "uid": uid
@@ -758,7 +758,7 @@ class Main(Star):
                     combined_question = f"用户的问题是：{question}\n\n请结合以下搜索信息回答用户问题：\n{''.join(search_info)}\n\n注意：这是回答QQ平台的问题，请注意违禁词，避免涉政，涉黄，暴力，血腥，反人类，反人伦。\n\n可以详细的回答用户为什么是这个答案，要简洁明了，可以解释原因"
                     
                     # 4. 调用DeepSeek-3.2API
-                    deepseek_url = "https://api.jkyai.top/API/depsek3.2.php"
+                    deepseek_url = "https://yunzhiapi.cn/API/depsek3.2.php"
                     deepseek_params = {
                         "question": combined_question
                     }
@@ -931,7 +931,7 @@ class Main(Star):
             
             # 2. 调用万能解题助手API
             yield CommandResult().message("收到题目，马上解题，请稍后")
-            api_url = "https://api.jkyai.top/API/wnjtzs.php"
+            api_url = "https://yunzhiapi.cn/API/wnjtzs.php"
             params = {
                 "question": question_text,
                 "type": "json"  # 返回json格式，便于解析
@@ -1277,7 +1277,7 @@ class Main(Star):
             yield CommandResult().message("收到题目，马上解题，请稍后")
             
             # 1. 调用万能解题助手API
-            api_url = "https://api.jkyai.top/API/wnjtzs.php"
+            api_url = "https://yunzhiapi.cn/API/wnjtzs.php"
             params = {
                 "question": question,
                 "type": "json"  # 返回json格式，便于解析
