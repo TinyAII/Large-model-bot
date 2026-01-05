@@ -1241,7 +1241,7 @@ class Main(Star):
             return await self.text_to_image(text)
     
     @filter.command("解题助手")
-    async def jie_ti_zhu_shou(self, message: AstrMessageEvent):
+    async def jie_ti_zhu_shou(self, message: AstrMessageEvent, *args):
         """解题助手，支持数学和物理方面的题目，返回图片格式的解题结果"""
         msg = message.message_str.replace("解题助手", "").strip()
         
@@ -1341,7 +1341,7 @@ class Main(Star):
             yield CommandResult().error(f"请求时发生错误：{str(e)}")
     
     @filter.command("图片解题助手")
-    async def tu_pian_jie_ti_zhu_shou(self, message: AstrMessageEvent):
+    async def tu_pian_jie_ti_zhu_shou(self, message: AstrMessageEvent, *args):
         """图片解题助手，支持识别图片中的题目并解题，返回图片格式的解题结果"""
         user_id = message.get_sender_id()
         
@@ -1369,7 +1369,7 @@ class Main(Star):
         yield CommandResult().message("📷 请发送要识别的图片（30秒内有效）")
     
     @filter.command("大模型菜单")
-    async def da_mo_xing_cai_dan(self, message: AstrMessageEvent):
+    async def da_mo_xing_cai_dan(self, message: AstrMessageEvent, *args):
         """大模型菜单，显示所有可用的AI助手命令"""
         try:
             # 构建菜单内容
@@ -1427,7 +1427,7 @@ class Main(Star):
             yield CommandResult().error(f"生成大模型菜单失败：{str(e)}")
     
     @filter.event_message_type(filter.EventMessageType.ALL)
-    async def on_message(self, event: AstrMessageEvent):
+    async def on_message(self, event: AstrMessageEvent, *args):
         """监听所有消息，处理等待中的图片请求"""
         user_id = event.get_sender_id()
         
